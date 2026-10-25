@@ -182,6 +182,14 @@ if not ThirdPerson.setup then
         self:remove_ghost()
 
         self.player_unit = player_unit
+
+        if self:peers_syncing() then
+            self._suspended = true
+
+            return
+        end
+
+        self._suspended = nil
         self._spawn_token = (self._spawn_token or 0) + 1
 
         local session = managers.network and managers.network:session()
@@ -232,6 +240,41 @@ if not ThirdPerson.setup then
 
             self:log("ghost spawned")
         end)
+    end
+
+    -- A drop-in makes the engine sync every husk to the joining client, where the ghost would show up as a
+    -- real (fake) player and crash the load. So the ghost only exists while no peer is being synced.
+    function ThirdPerson:peers_syncing()
+        local session = managers.network and managers.network:session()
+
+        if not session or not Network:is_server() then
+            return false
+        end
+
+        for _, peer in pairs(session:all_peers()) do
+            if peer._syncing then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    function ThirdPerson:suspend_ghost()
+        if alive(self.player_unit) and (self:ghost_alive() or self._spawn_token) then
+            local pu = self.player_unit
+
+            self:remove_ghost()
+            self.player_unit = pu
+            self._suspended = true
+        end
+    end
+
+    function ThirdPerson:resume_ghost()
+        if self._suspended and alive(self.player_unit) and not self:peers_syncing() then
+            self._suspended = nil
+            self:spawn_ghost(self.player_unit)
+        end
     end
 
     -- (Re)attaches head/upper/lower of the local peer's current character customization to the ghost.
@@ -291,6 +334,7 @@ if not ThirdPerson.setup then
         if unit == self.player_unit then
             self:remove_ghost()
             self.player_unit = nil
+            self._suspended = nil
         end
     end
 
