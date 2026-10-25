@@ -6,6 +6,11 @@
      min_sblt_version="2.0.0"
      priority="100"
      color="60 60 60">
+    <updates>
+        <update identifier="thirdperson">
+            <host meta="https://raw.githubusercontent.com/BangL/raid-mods-meta/main/thirdperson.json"/>
+        </update>
+    </updates>
     <localization directory="loc">
         <loc file="english.json"
              language="english" />
