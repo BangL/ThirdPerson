@@ -593,6 +593,23 @@ if not ThirdPerson.setup then
 
         local ext_anim = m._ext_anim
 
+        -- Downed: the husk update (which would start the bleedout animation) is replaced, so do it here.
+        if pu:movement():current_state_name() == "bleed_out" then
+            if not m._tps_down then
+                m._tps_down = true
+
+                m:play_redirect(managers.buff_effect:is_effect_active(BuffEffectManager.EFFECT_ONLY_MELEE_AVAILABLE) and "fatal" or "bleedout")
+            end
+
+            return
+        elseif m._tps_down then
+            m._tps_down = nil
+
+            if not m:play_redirect("stand") then
+                m:play_state("std/stand/still/idle/look")
+            end
+        end
+
         if m._pose_code == 1 then
             if not ext_anim.stand then
                 m:play_redirect("stand")
