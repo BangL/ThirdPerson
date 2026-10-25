@@ -2,7 +2,7 @@
 <mod name="ThirdPerson"
      description="Third person camera with a real husk character model (animations, weapon), and aiming fixed to the crosshair."
      author="BangL"
-     version="0.1.0"
+     version="0.1.1"
      min_sblt_version="2.0.0"
      priority="100"
      color="60 60 60">
