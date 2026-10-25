@@ -1,0 +1,30 @@
+{
+  "tps_title": "Third Person",
+  "tps_reset": "Reset",
+  "tps_reset_confirm": "Reset all Third Person options to their defaults?",
+
+  "tps_cat_general": "General",
+  "tps_cat_camera": "Camera",
+  "tps_cat_ads": "Camera while aiming",
+
+  "tps_start_in_tps": "Start in third person",
+  "tps_start_in_tps_desc": "Start each session in third person view. Off: start in first person. The hotkey switches live either way.",
+  "tps_keep_hud_in_ads": "Keep crosshair and motion dot while aiming",
+  "tps_keep_hud_in_ads_desc": "In third person the game would hide the crosshair and the motion dot while aiming down sights. On: they stay visible. Off: vanilla behavior.",
+  "tps_switch_time": "Switch duration (s)",
+  "tps_switch_time_desc": "How long the camera glides when switching between first and third person.",
+
+  "tps_dist": "Distance behind",
+  "tps_dist_desc": "Camera distance behind your head (cm).",
+  "tps_side": "Shoulder offset",
+  "tps_side_desc": "Camera offset to the right (cm). Negative = left shoulder.",
+  "tps_up": "Height",
+  "tps_up_desc": "Camera height above your head (cm).",
+
+  "tps_ads_dist": "Distance behind (aiming)",
+  "tps_ads_dist_desc": "Camera distance behind your head while aiming down sights (cm).",
+  "tps_ads_side": "Shoulder offset (aiming)",
+  "tps_ads_side_desc": "Camera offset to the right while aiming (cm). Negative = left shoulder.",
+  "tps_ads_up": "Height (aiming)",
+  "tps_ads_up_desc": "Camera height above your head while aiming (cm)."
+}

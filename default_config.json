@@ -1,0 +1,11 @@
+{
+  "start_in_tps": true,
+  "keep_hud_in_ads": true,
+  "dist": 170,
+  "side": 45,
+  "up": 10,
+  "ads_dist": 110,
+  "ads_side": 40,
+  "ads_up": 12,
+  "switch_time": 0.2
+}

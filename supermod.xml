@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<mod name="ThirdPerson"
+     description="Third person camera with a real husk character model (animations, weapon), and aiming fixed to the crosshair."
+     author="BangL"
+     version="0.1.0"
+     min_sblt_version="2.0.0"
+     priority="100"
+     color="60 60 60">
+    <localization directory="loc">
+        <loc file="english.json"
+             language="english" />
+        <loc file="german.json"
+             language="german" />
+    </localization>
+    <keybinds>
+        <keybind keybind_id="ThirdPersonToggle"
+                 name="Toggle first/third person view"
+                 localized="false"
+                 run_in_menu="false"
+                 run_in_game="true"
+                 run_in_paused_game="false"
+                 script_path="lua/Toggle.lua" />
+    </keybinds>
+    <hooks>
+        <pre hook_id="lib/entry"
+             script_path="ThirdPerson.lua" />
+        <post hook_id="lib/managers/menu/menucomponentmanager"
+              script_path="lua/MenuComponentManager.lua" />
+        <post hook_id="lib/units/beings/player/playercamera"
+              script_path="lua/PlayerCamera.lua" />
+        <post hook_id="lib/units/cameras/fpcameraplayerbase"
+              script_path="lua/FPCameraPlayerBase.lua" />
+        <post hook_id="lib/units/beings/player/states/playerstandard"
+              script_path="lua/PlayerStandard.lua" />
+        <post hook_id="lib/units/beings/player/playermovement"
+              script_path="lua/PlayerMovement.lua" />
+        <post hook_id="lib/units/weapons/raycastweaponbase"
+              script_path="lua/RaycastWeaponBase.lua" />
+        <post hook_id="lib/network/base/networkpeer"
+              script_path="lua/NetworkPeer.lua" />
+        <post hook_id="lib/units/weapons/newnpcraycastweaponbase"
+              script_path="lua/NewNPCRaycastWeaponBase.lua" />
+        <post hook_id="lib/setups/gamesetup"
+              script_path="lua/GameSetup.lua" />
+        <post hook_id="lib/managers/hudmanagerpd2"
+              script_path="lua/HUDManagerPD2.lua" />
+        <post hook_id="lib/network/base/extensions/networkbaseextension"
+              script_path="lua/NetworkBaseExtension.lua" />
+        <post hook_id="lib/units/beings/player/huskplayerbase"
+              script_path="lua/HuskPlayerBase.lua" />
+        <post hook_id="lib/units/beings/player/huskplayermovement"
+              script_path="lua/HuskPlayerMovement.lua" />
+    </hooks>
+</mod>

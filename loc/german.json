@@ -1,0 +1,30 @@
+{
+  "tps_title": "Third Person",
+  "tps_reset": "Zurücksetzen",
+  "tps_reset_confirm": "Alle Third-Person-Optionen auf Standard zurücksetzen?",
+
+  "tps_cat_general": "Allgemein",
+  "tps_cat_camera": "Kamera",
+  "tps_cat_ads": "Kamera beim Zielen",
+
+  "tps_start_in_tps": "In Third Person starten",
+  "tps_start_in_tps_desc": "Jede Sitzung in der Third-Person-Ansicht beginnen. Aus: in der Ego-Perspektive starten. Der Hotkey wechselt in beiden Fällen live.",
+  "tps_keep_hud_in_ads": "Crosshair und Motion Dot beim Zielen behalten",
+  "tps_keep_hud_in_ads_desc": "In Third Person würde das Spiel Crosshair und Motion Dot beim Zielen über Visier ausblenden. An: sie bleiben sichtbar. Aus: Originalverhalten.",
+  "tps_switch_time": "Dauer des Wechsels (s)",
+  "tps_switch_time_desc": "Wie lange die Kamera beim Wechsel zwischen Ego und Third Person gleitet.",
+
+  "tps_dist": "Abstand hinter dir",
+  "tps_dist_desc": "Abstand der Kamera hinter deinem Kopf (cm).",
+  "tps_side": "Schulter-Versatz",
+  "tps_side_desc": "Seitlicher Versatz der Kamera nach rechts (cm). Negativ = linke Schulter.",
+  "tps_up": "Höhe",
+  "tps_up_desc": "Höhe der Kamera über deinem Kopf (cm).",
+
+  "tps_ads_dist": "Abstand hinter dir (Zielen)",
+  "tps_ads_dist_desc": "Abstand der Kamera hinter deinem Kopf beim Zielen über Visier (cm).",
+  "tps_ads_side": "Schulter-Versatz (Zielen)",
+  "tps_ads_side_desc": "Seitlicher Versatz der Kamera nach rechts beim Zielen (cm). Negativ = linke Schulter.",
+  "tps_ads_up": "Höhe (Zielen)",
+  "tps_ads_up_desc": "Höhe der Kamera über deinem Kopf beim Zielen (cm)."
+}
