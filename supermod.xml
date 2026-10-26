@@ -51,6 +51,8 @@
               script_path="lua/HUDManagerPD2.lua" />
         <post hook_id="lib/network/base/extensions/networkbaseextension"
               script_path="lua/NetworkBaseExtension.lua" />
+        <post hook_id="lib/network/base/basenetworksession"
+              script_path="lua/BaseNetworkSession.lua" />
         <post hook_id="lib/units/beings/player/huskplayerbase"
               script_path="lua/HuskPlayerBase.lua" />
         <post hook_id="lib/units/beings/player/huskplayermovement"

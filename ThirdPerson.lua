@@ -379,6 +379,21 @@ if not ThirdPerson.setup then
         end,
     }
 
+    -- Same for what the local player sends with managers.network:session():send_to_peers_synched.
+    ThirdPerson.mirror_session_handlers = {
+        play_distance_interact_redirect = function(m, redirect)
+            m:play_redirect(redirect)
+        end,
+    }
+
+    function ThirdPerson:mirror_session(func, ...)
+        local handler = self:ghost_alive() and self.mirror_session_handlers[func]
+
+        if handler then
+            self:safe(handler, self.ghost:movement(), ...)
+        end
+    end
+
     function ThirdPerson:mirror(func, ...)
         if not self:ghost_alive() then
             return
