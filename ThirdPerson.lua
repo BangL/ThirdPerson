@@ -179,6 +179,10 @@ if not ThirdPerson.setup then
 
     -- Spawns the husk model for the local player (async: unit package is loaded first).
     function ThirdPerson:spawn_ghost(player_unit)
+        if self:ghost_alive() and self.player_unit == player_unit then
+            return
+        end
+
         self:remove_ghost()
 
         self.player_unit = player_unit
@@ -232,14 +236,28 @@ if not ThirdPerson.setup then
 
             self:apply_outfit()
 
-            -- Mirror the equipped weapon (resends set_equipped_weapon, caught by NetworkBaseExtension:send).
-            -- Only with a weapon in hand; otherwise update_ghost retries once the player has one.
+            -- Mirror the equipped weapon. Only with a weapon in hand; otherwise update_ghost retries once the player has one.
             if pu:inventory() and pu:inventory()._send_equipped_weapon and alive(pu:inventory():equipped_unit()) then
-                pu:inventory():_send_equipped_weapon()
+                self:sync_ghost_weapon()
             end
 
             self:log("ghost spawned")
         end)
+    end
+
+    -- Replays the player's equipped weapon onto the ghost only. _send_equipped_weapon builds the arguments, the
+    -- send hook (NetworkBaseExtension:send) mirrors them onto the ghost and, with this flag set, drops the packet:
+    -- the other peers already know the weapon and must not get it again.
+    function ThirdPerson:sync_ghost_weapon()
+        local pu = self.player_unit
+
+        if not (alive(pu) and pu:inventory() and pu:inventory()._send_equipped_weapon) then
+            return
+        end
+
+        self._local_only = true
+        self:safe(function() pu:inventory():_send_equipped_weapon() end)
+        self._local_only = nil
     end
 
     -- A drop-in makes the engine sync every husk to the joining client, where the ghost would show up as a
@@ -394,6 +412,26 @@ if not ThirdPerson.setup then
         end
     end
 
+    -- Diagnosis: warns in the log if the local player sends one call way too often (flood).
+    ThirdPerson.SEND_WARN_PER_SEC = 120
+
+    function ThirdPerson:count_send(func)
+        local sec = math.floor(TimerManager:wall():time())
+
+        if self._send_sec ~= sec then
+            self._send_sec = sec
+            self._send_counts = {}
+        end
+
+        local n = (self._send_counts[func] or 0) + 1
+
+        self._send_counts[func] = n
+
+        if n == self.SEND_WARN_PER_SEC then
+            self:log("warning: " .. tostring(func) .. " sent " .. n .. " times within a second")
+        end
+    end
+
     function ThirdPerson:mirror(func, ...)
         if not self:ghost_alive() then
             return
@@ -537,7 +575,7 @@ if not ThirdPerson.setup then
 
     -- Muzzle of the ghost's weapon, or nil if there is none.
     function ThirdPerson:muzzle_position()
-        if not self:tps_on() then
+        if not self:tps_on() or self:in_turret() then
             return
         end
 
@@ -550,7 +588,19 @@ if not ThirdPerson.setup then
         -- The fire object lives on a weapon part; the weapon base resolves it (get_object on the root unit does not).
         local obj = weapon:base()._obj_fire
 
-        return alive(obj) and obj:position() or nil
+        if not alive(obj) then
+            return
+        end
+
+        -- the shot origin is synced to the other peers: only take a sane one (finite, close to the player)
+        local pos = obj:position()
+        local head = alive(self.player_unit) and self.player_unit:movement():m_head_pos()
+
+        if pos.x ~= pos.x or pos.y ~= pos.y or pos.z ~= pos.z or not head or mvector3.distance(pos, head) > 300 then
+            return
+        end
+
+        return pos
     end
 
     -- Direction from the muzzle to the crosshair point.
@@ -572,6 +622,158 @@ if not ThirdPerson.setup then
 
     -- Ghost locomotion --------------------------------------------------------------------
 
+    function ThirdPerson:in_turret()
+        local pu = self.player_unit
+
+        return alive(pu) and pu:movement() and pu:movement():current_state_name() == "turret"
+    end
+
+    -- Static turret: the player is warped to the turret's view point (eye height) and shoots from the turret, so the
+    -- normal 1:1 follow would put the ghost's feet at the eyes. Like a network husk, the ghost goes to the turret's
+    -- third person placement and plays the enter animation, then aims the turret (standing stance).
+    function ThirdPerson:update_ghost_turret(m, t, dt)
+        local turret = m._tps_turret
+
+        if not turret then
+            local data = managers.player:get_turret_data_for_peer(managers.network:session():local_peer():id())
+
+            if not (data and alive(data.turret_unit) and data.turret_unit.weapon) then
+                return
+            end
+
+            -- the exit animation is gone from the turret data once the player left, so keep it now
+            turret = { unit = data.turret_unit, exit_animation = data.exit_animation }
+            m._tps_turret = turret
+            m._tps_turret_exit = nil
+
+            local ghost = self.ghost
+
+            ghost:inventory():hide_equipped_unit()
+            ghost:set_driving("animation")
+
+            m._tps_down = nil
+            m._tps_moving = nil
+            m._tps_run = nil
+
+            local placement = turret.unit:get_object(Idstring("third_person_placement"))
+
+            if placement then
+                m:set_rotation(placement:rotation())
+                m:set_position(placement:position())
+            end
+
+            if data.enter_animation then
+                m:play_redirect(data.enter_animation)
+            end
+
+            return
+        end
+
+        local turret_unit = turret.unit
+
+        if not (alive(turret_unit) and turret_unit.weapon) then
+            return
+        end
+
+        -- a late weapon sync (the player equips the turret slot) must not show a weapon in the ghost's hands
+        self.ghost:inventory():hide_equipped_unit()
+
+        if not self._vis then
+            set_tree_visible(self.ghost, false)
+        end
+
+        local placement = turret_unit:get_object(Idstring("third_person_placement"))
+
+        if placement then
+            m:set_rotation(placement:rotation())
+            m:set_position(placement:position())
+        end
+
+        local weapon = turret_unit:weapon()
+        local fire_locator = weapon._get_fire_locator and weapon:_get_fire_locator()
+
+        if fire_locator and weapon._puppet_stance == "standing" then
+            local current_direction = fire_locator:rotation():y()
+
+            mvector3.negate(current_direction)
+            mvector3.multiply(current_direction, 1000)
+
+            local original_direction = turret_unit:rotation():y()
+
+            mvector3.multiply(original_direction, 1000)
+
+            local deflection = original_direction:angle(current_direction)
+            local deflection_direction = math.sign((original_direction - current_direction):to_polar_with_reference(current_direction, math.UP).spin)
+            local spin_max = turret_unit:movement()._spin_max or deflection
+            local deflection_normalized = spin_max ~= 0 and math.clamp(math.abs(deflection), 0, math.abs(spin_max)) / math.abs(spin_max) or 0
+            local side = deflection_direction < 0 and "left" or "right"
+
+            m._machine:set_parameter(Idstring("std/stand/so/idle/e_so_mg34_aim_" .. side), "t", deflection_normalized)
+            m:play_redirect("e_so_mg34_aim_" .. side)
+        end
+    end
+
+    -- The player is warped away at once, the ghost stays at the turret while the (sped up) exit animation plays.
+    ThirdPerson.TURRET_EXIT_SPEED = 2
+    ThirdPerson.TURRET_EXIT_TIME = 0.6
+
+    function ThirdPerson:exit_ghost_turret(m, t)
+        local turret = m._tps_turret
+
+        m._tps_turret = nil
+
+        if turret.exit_animation and alive(turret.unit) and m:play_redirect(turret.exit_animation) then
+            m._machine:set_speed(m._machine:segment_state(m._ids_base), self.TURRET_EXIT_SPEED)
+
+            m._tps_turret_exit = { unit = turret.unit, t_start = t, t_end = t + self.TURRET_EXIT_TIME }
+        else
+            self:finish_ghost_turret_exit(m)
+        end
+    end
+
+    -- Returns true while the exit animation still owns the ghost.
+    function ThirdPerson:update_ghost_turret_exit(m, t)
+        local exit = m._tps_turret_exit
+
+        if t < exit.t_end and alive(exit.unit) then
+            local placement = exit.unit:get_object(Idstring("third_person_placement"))
+
+            if placement then
+                -- glide from the turret to wherever the player is by now, so the end is no jump
+                local k = math.clamp((t - exit.t_start) / (exit.t_end - exit.t_start), 0, 1)
+                local pos = Vector3()
+
+                mvector3.lerp(pos, placement:position(), self.player_unit:position(), k * k * (3 - 2 * k))
+
+                m:set_rotation(placement:rotation())
+                m:set_position(pos)
+            end
+
+            self.ghost:inventory():hide_equipped_unit()
+
+            return true
+        end
+
+        self:finish_ghost_turret_exit(m)
+
+        return false
+    end
+
+    function ThirdPerson:finish_ghost_turret_exit(m)
+        local ghost = self.ghost
+
+        m._tps_turret_exit = nil
+        m._tps_last_pos = nil
+
+        m._machine:set_speed(m._machine:segment_state(m._ids_base), 1)
+        ghost:set_driving("script")
+        ghost:inventory():show_equipped_unit()
+
+        if not m:play_redirect("stand") then
+            m:play_state("std/stand/still/idle/look")
+        end
+    end
+
     -- Replaces HuskPlayerMovement:update for the ghost: the player moves, the ghost follows 1:1
     -- and only picks the matching animations (same helpers the network husk uses).
     function ThirdPerson:update_ghost(m, t, dt)
@@ -581,14 +783,32 @@ if not ThirdPerson.setup then
             return
         end
 
+        if self:in_turret() then
+            return self:update_ghost_turret(m, t, dt)
+        elseif m._tps_turret then
+            self:exit_ghost_turret(m, t)
+        end
+
+        if m._tps_turret_exit and self:update_ghost_turret_exit(m, t) then
+            return
+        end
+
         -- Right after load the player has no weapon yet when the ghost spawns, so the first sync is lost
         -- and the ghost stays in T-pose until the player equips/shoots. Retry until it sticks.
         if not m._tps_synced then
             local weapon = pu:inventory() and pu:inventory():equipped_unit()
 
             if alive(weapon) then
-                if not alive(self.ghost:inventory():equipped_unit()) then
-                    self:safe(function() pu:inventory():_send_equipped_weapon() end)
+                if not alive(self.ghost:inventory():equipped_unit()) and t >= (m._tps_retry_t or 0) then
+                    -- local only (see sync_ghost_weapon), but still no per-frame spam; gives up after a few tries
+                    m._tps_retries = (m._tps_retries or 0) + 1
+                    m._tps_retry_t = t + 1
+
+                    if m._tps_retries <= 5 then
+                        self:sync_ghost_weapon()
+                    elseif m._tps_retries == 6 then
+                        self:log("ghost got no weapon after 5 tries, giving up")
+                    end
                 end
 
                 if alive(self.ghost:inventory():equipped_unit()) then

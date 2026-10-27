@@ -8,6 +8,13 @@ function NetworkBaseExtension:send(func, ...)
 
     if ThirdPerson:is_local(self._unit) then
         ThirdPerson:mirror(func, ...)
+
+        -- ghost weapon sync: nothing to tell the other peers
+        if ThirdPerson._local_only and func == "set_equipped_weapon" then
+            return
+        end
+
+        ThirdPerson:count_send(func)
     end
 
     return tps_send(self, func, ...)
