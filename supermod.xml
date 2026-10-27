@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<mod name="ThirdPerson"
+<mod name="ThirdPerson" image="icon.png"
      description="Third person camera with a real husk character model (animations, weapon), and aiming fixed to the crosshair."
      author="BangL"
      version="0.1.3"
