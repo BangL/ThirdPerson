@@ -338,11 +338,12 @@ if not ThirdPerson.setup then
     end
 
     -- Deletes ghost units this table no longer knows about (e.g. after a script reload or a respawn race).
+    -- The other players' husks share the ghost's unit name, only units marked by HuskPlayerBase:post_init are ghosts.
     function ThirdPerson:remove_orphans()
         local key = Idstring(self.GHOST_UNIT):key()
 
         for _, unit in ipairs(World:find_units_quick("all")) do
-            if alive(unit) and unit:name():key() == key and unit ~= self.ghost then
+            if alive(unit) and unit:name():key() == key and unit ~= self.ghost and unit:base() and unit:base()._tps_ghost then
                 World:delete_unit(unit)
             end
         end
