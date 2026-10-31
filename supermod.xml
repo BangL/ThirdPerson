@@ -8,7 +8,7 @@
      color="60 60 60">
     <updates>
         <update identifier="thirdperson">
-            <host meta="https://raw.githubusercontent.com/BangL/raid-mods-meta/main/thirdperson.json"/>
+            <host meta="https://raw.githubusercontent.com/BangL/raid-mods-meta/main/thirdperson.json" patchnotes="https://github.com/BangL/ThirdPerson/blob/master/CHANGELOG.md"/>
         </update>
     </updates>
     <localization directory="loc">
